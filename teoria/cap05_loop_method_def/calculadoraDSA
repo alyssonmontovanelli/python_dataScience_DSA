@@ -1,0 +1,51 @@
+# print("\n******************* Calculadora em Python *******************")
+
+# Menu principal
+
+def menu():
+  print("\nSelecione o número da opeação desejada:")
+  print("\n1 - Soma")
+  print("2 - Subtração")
+  print("3 - Multiplicação")
+  print("4 - Divisão")
+  operacao = input("\nDigite sua opção (1/2/3/4): ")
+  return (operacao)
+
+# Função de operadores
+
+def soma(x, y):
+  soma = x + y
+  print("%d + %d = %d" % (x, y, soma))
+
+def subtrair(x, y):
+  subtracao = x - y
+  print("%d - %d = %d" % (x, y, subtracao))
+
+def multiplica(x, y):
+  multiplicacao = x * y
+  print("%d * %d = %d" % (x, y, multiplicacao))
+
+def divisao(x, y):
+  divisao = x / y
+  print("%d / %d = %d" % (x, y, divisao))
+
+
+# calculadora em si
+def calculadora():
+  opcao = menu()
+  x = int(input("\nInforme o primeiro valor: "))
+  y = int(input("\nInforme o segundo valor: "))
+
+  if opcao == "1":
+    soma(x, y)
+  elif opcao == "2":
+    subtrair(x, y)
+  elif opcao == "3":
+    multiplica(x, y)
+  elif opcao == "4":
+    divisao(x, y)
+  else:
+    print("Digite um valor válido")
+
+
+calculadora()

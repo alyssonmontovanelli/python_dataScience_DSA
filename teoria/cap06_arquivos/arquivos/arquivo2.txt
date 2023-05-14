@@ -1,0 +1,3 @@
+Escrevendo o primeiro arquivo com a linguagem Python
+ É hoje o dia, da alegria, fiz append em arquivo
+ É hoje o dia, da alegria, fiz append em arquivo
