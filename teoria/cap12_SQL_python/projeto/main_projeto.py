@@ -123,16 +123,40 @@ Demonstre o resultado através de um gráfico de pizza.
 print("\n\tExercicio 05\n")
 
 
-vendas_porSegmento = dataFrame.groupby('Segmento')['Valor_Venda'].sum().reset_index()
+vendas_porSegmento = dataFrame.groupby('Segmento')['Valor_Venda'].sum().reset_index().sort_values(by= 'Valor_Venda', ascending=False)
 print(f"Total de vendas por segmento\
       \n{vendas_porSegmento}")
 
-#Plotagem
+# Formatando para melhor visualização - valor em notação apra absoluto
+def autopct_format(values):
+    def my_format(pct):
+        total = sum(values)
+        val = int(round(pct * total / 100.0))
+        return ' $ {v:d}'.format(v = val)
+    return my_format
+
+
+#Plotagem ----
 # plt.figure(figsize=(8,8))
 # plt.pie(vendas_porSegmento['Valor_Venda'], labels = vendas_porSegmento['Segmento'], startangle = 60,autopct='%1.1f%%', shadow=True, explode = (0.1,0,0))
 # plt.title('Vendas Por Segmento')
 # plt.savefig('graphics\/exercicio_05_vendasPorSegmento.png')
 # plt.show()
+
+# #Plotagem 2 'Turbinada DSA' ---
+# plt.figure(figsize=(16,6))
+# plt.pie(vendas_porSegmento['Valor_Venda'], labels = vendas_porSegmento['Segmento'], startangle = 90,\
+#         autopct= autopct_format(vendas_porSegmento['Valor_Venda']))
+# #Limpa circulo Central
+# center_circle = plt.Circle((0,0), 0.82, fc = 'white')
+# fig = plt.gcf()
+# fig.gca().add_artist(center_circle)
+# #Labels e anotações
+# plt.annotate(text = 'Total de Vendas ' + '$ ' + str(int(sum(vendas_porSegmento['Valor_Venda']))), xy = (-0.25,0))
+# plt.title('Total de Vendas Por Segmento')
+# plt.show()
+
+
 
 
 
@@ -146,12 +170,18 @@ print("\n\tExercicio 06\n")
 #Utilizando regex e replace de string para alterar o id pedido para apenas ano
 dataFrame['ID_Pedido'] = dataFrame['ID_Pedido'].apply(lambda x: re.sub(r'CA-(\d{4})-\d+', r'\1', x))
 dataFrame['ID_Pedido'] = dataFrame['ID_Pedido'].apply(lambda x: re.sub(r'US-(\d{4})-\d+', r'\1', x))
-# print(dataFrame.head(15))
-
 
 vendas_porSegmentoAno = dataFrame.groupby(['ID_Pedido', 'Segmento'])['Valor_Venda'].sum()
 print(f"O total de vendas, por Ano e Segmento, nos ultimos 4 anos foram:\
       \n{vendas_porSegmentoAno}")
+
+# Outra forma de fazer, com datetime
+dataFrame['Data_Pedido'] = pd.to_datetime(dataFrame['Data_Pedido'], dayfirst = True) # com isso o tipo da coluna vira datetime64
+# Criando nova coluna 'ano'
+dataFrame['Ano'] = dataFrame['Data_Pedido'].dt.year
+vendas_porSegmentoAno2 = dataFrame.groupby(['Ano', 'Segmento'])['Valor_Venda'].sum()
+print(vendas_porSegmentoAno2)
+
 
 
 
@@ -184,20 +214,18 @@ print(f"{vendas_desconto15} vendas receberão o desconto de 15%.\
 '''
 print("\n\tExercicio 08\n")
 
-mediaAnterior = dataFrame['Valor_Venda'].mean().round(2)
+#Condicional com np.where - se for maior que 1000, desconto será de 0.15
+dataFrame['Desconto'] = np.where(dataFrame['Valor_Venda'] >= 1000, 0.15, 0.10)
 
-tabela_copia = dataFrame.copy()
-condicaoDesconto = tabela_copia['Valor_Venda'] >= 1000
-teste = tabela_copia['Valor_Venda'].mean().round(2)
-# tabela_copia['Valor_Venda'] = tabela_copia[tabela_copia['Valor_Venda'] >= 1000.00].apply(lambda x: x * 0.85)
-# mediaFinal15 = tabela_copia['Valor_Venda'].mean().round(2)
+dataFrame['Valor_Venda_Final'] = dataFrame['Valor_Venda'] - (dataFrame['Valor_Venda'] * dataFrame['Desconto'])
 
-# mediaFinal15 = dataFrame.loc[dataFrame['Valor_Venda'] >= 1000, 'Valor_Venda'].apply(lambda x: x * 0.85).mean().round(2)
+valor_semDesconto10 = dataFrame[dataFrame['Desconto'] == 0.1].Valor_Venda.sum()
+valor_comDesconto15 = dataFrame[dataFrame['Desconto'] == 0.15].Valor_Venda_Final.sum()
+valor_medioFinal_desconto_15 = (valor_semDesconto10 + valor_comDesconto15) / dataFrame['Valor_Venda'].count()
 
-# mediaFinal15 = dataFrame[dataFrame['Valor_Venda'] >= 1000].apply(lambda x: x*0.85)
-print(mediaAnterior)
-print(teste)
-# print(condicaoDesconto)
+print(f"Valor medio, sem aplicar os descontos de 15% fica em: $ {dataFrame['Valor_Venda'].mean().round(2)}")
+print(f"\nValor medio, com aplicacao dos descontos de 15% fica em: $ {round(valor_medioFinal_desconto_15,2)}\n")
+
 
 
 
@@ -209,8 +237,31 @@ print(teste)
 Demonstre o resultado através de gráfico de linha.
 
 '''
+dataFrame['Mes'] = dataFrame['Data_Pedido'].dt.month
 
+# relplot para relacionar diferentes
 
+media_ano_mes_segmento = dataFrame.groupby(['Ano', 'Mes', 'Segmento'])['Valor_Venda'].agg([np.sum, np.mean, np.median])
+
+anos = media_ano_mes_segmento.index.get_level_values(0)
+meses = media_ano_mes_segmento.index.get_level_values(1)
+segmentos = media_ano_mes_segmento.index.get_level_values(2)
+
+# plt.figure(figsize=(12,6))
+# sns.set()
+# fig1 = sns.relplot(kind='line',
+#                   data=media_ano_mes_segmento,
+#                   y = 'mean',
+#                   x = meses,
+#                   hue = segmentos,
+#                   col = anos,
+#                   col_wrap = 2)
+# plt.ylabel('Valor Médio')
+# plt.show()
+
+# sns.kdeplot(media2015, x='Mes', y=media2015.values)
+# plt.xlabel('sdahu')
+# plt.show()
 
 
 
@@ -222,8 +273,67 @@ Demonstre o resultado através de gráfico de linha.
 Demonstre tudo através de um único gráfico.
 '''
 
-print("\n\tExercicio 12\n")
+# Criando DF
+total_vendas_Cat_top12SubCat = dataFrame.groupby(['Categoria',
+                                                  'SubCategoria']).sum(numeric_only=True).sort_values('Valor_Venda',
+                                                                                                      ascending=False).head(12)
 
-vendas_12 = dataFrame.groupby(['Categoria', 'SubCategoria'])['Valor_Venda'].sum()
-print(dataFrame['SubCategoria'].value_counts().head(12))
-print(vendas_12)
+# Convertendo coluna Valor_Venda em num inteiro e classificando por cat
+total_vendas = total_vendas_Cat_top12SubCat[['Valor_Venda']].astype(int).sort_values(by= 'Categoria').reset_index()
+
+# DatafRAME com totais por categoria para anel exterior
+total_vendas_Cat = total_vendas.groupby('Categoria').sum(numeric_only= True).reset_index()
+
+print(total_vendas)
+print(total_vendas_Cat)
+
+# Cores para categorias
+
+cores_categorias = ['#5d00de',
+                    '#0ee84f',
+                    '#e80e27',]
+
+cores_subCategorias = ['#aa8cd4',
+                       '#aa8cd5',
+                       '#aa8cd6',
+                       '#26c957',
+                       '#26c958',
+                       '#26c959',
+                       '#26c960',
+                       '#e65e65',
+                       '#e65e66',
+                       '#e65e67',
+                       '#e65e68',]
+
+#Plotagem
+
+fig, ax = plt.subplots(figsize=(16,10))
+
+# gráfico categorias
+grafico1 = ax.pie(total_vendas_Cat['Valor_Venda'],
+            radius=1,
+            labels = total_vendas_Cat['Categoria'],
+            wedgeprops= dict(edgecolor = 'white'), #limite das divisoes
+            colors = cores_categorias)
+
+# gráfico subcategorias
+grafico2 = ax.pie(total_vendas['Valor_Venda'],
+                  radius = 0.9,
+                  labels= total_vendas['SubCategoria'],
+                  autopct = autopct_format(total_vendas['Valor_Venda']),
+                  colors = cores_subCategorias,
+                  labeldistance = 0.7,
+                  wedgeprops= dict(edgecolor = 'white'),
+                  pctdistance= 0.53,
+                  rotatelabels = True) # legendas tortas
+
+#Limpra o centro do circulo
+
+centre_circle = plt.Circle((0,0), 0.6, fc = 'white')
+
+# Labels e anotações
+fig = plt.gcf()
+fig.gca().add_artist(centre_circle)
+plt.annotate(text = 'Total de Vendas: ' + '$ ' + str(int(sum(total_vendas['Valor_Venda']))),xy = (-0.2, 0))
+plt.title('Total de Vendas Por Categoria e Top 12 SubCategorias')
+plt.show()
